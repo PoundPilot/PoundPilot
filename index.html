@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoundPilot | UK Salary Calculator</title>
+<meta name="description" content="Estimate your UK salary, income tax, National Insurance and take-home pay with PoundPilot.">
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;font-family:Arial,sans-serif;
+ background:#101827;color:#fff;padding:22px 15px;
+}
+.container{max-width:550px;margin:auto}
+header{text-align:center;margin:18px 0 28px}
+.logo{font-size:29px;font-weight:bold;color:#65dfa5}
+header p{color:#aab6c7}
+.card{
+ background:#1d293b;padding:22px;
+ border-radius:18px;margin-bottom:18px;
+}
+label{display:block;margin:15px 0 8px;color:#dce5ef}
+input,select{
+ width:100%;padding:14px;border-radius:9px;
+ border:1px solid #43516a;background:#101827;
+ color:white;font-size:16px;
+}
+button{
+ width:100%;padding:15px;margin-top:20px;
+ border:0;border-radius:10px;
+ background:#54d99b;color:#102319;
+ font-weight:bold;font-size:17px;
+}
+.result{
+ background:#102f2b;border-radius:13px;
+ padding:20px;text-align:center;margin-top:18px;
+}
+.result h2{color:#62e3a6;font-size:34px;margin:10px}
+.small{color:#aab6c7;font-size:13px;line-height:1.6}
+.grid{
+ display:grid;grid-template-columns:1fr 1fr;gap:12px;
+ margin-top:15px
+}
+.tile{background:#26354a;padding:15px;border-radius:10px}
+.tile span{display:block;color:#aab6c7;font-size:13px}
+.tile strong{display:block;margin-top:8px;font-size:19px}
+footer{text-align:center;color:#8e9bad;font-size:12px;padding:20px}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+ <div class="logo">✦ PoundPilot</div>
+ <p>Know your money. Plan your future.</p>
+</header>
+
+<div class="card">
+ <h2>🇬🇧 UK Salary Calculator</h2>
+ <p class="small">Estimate your take-home pay for the 2026–27 tax year.</p>
+
+ <label>Annual gross salary (£)</label>
+ <input id="salary" type="number" min="0" max="10000000"
+ placeholder="Example: 30000" value="30000">
+
+ <label>UK region</label>
+ <select id="region">
+  <option value="england">England</option>
+  <option value="wales">Wales</option>
+  <option value="ni">Northern Ireland</option>
+  <option value="scotland">Scotland</option>
+ </select>
+
+ <label>Working hours per week</label>
+ <input id="hours" type="number" min="1" max="168" value="37.5">
+
+ <button onclick="calculate()">Calculate my salary</button>
+
+ <div class="result">
+  <div class="small">Estimated annual take-home pay</div>
+  <h2 id="net">£0.00</h2>
+  <div class="small">After estimated Income Tax and National Insurance</div>
+ </div>
+
+ <div class="grid">
+  <div class="tile">
+   <span>Monthly take-home</span>
+   <strong id="monthly">£0</strong>
+  </div>
+  <div class="tile">
+   <span>Weekly take-home</span>
+   <strong id="weekly">£0</strong>
+  </div>
+  <div class="tile">
+   <span>Hourly take-home</span>
+   <strong id="hourly">£0</strong>
+  </div>
+  <div class="tile">
+   <span>Annual Income Tax</span>
+   <strong id="tax">£0</strong>
+  </div>
+  <div class="tile">
+   <span>Annual National Insurance</span>
+   <strong id="ni">£0</strong>
+  </div>
+  <div class="tile">
+   <span>Gross monthly salary</span>
+   <strong id="gross">£0</strong>
+  </div>
+ </div>
+</div>
+
+<div class="card">
+ <h3>About PoundPilot</h3>
+ <p class="small">
+ PoundPilot helps people understand their estimated UK salary
+ and take-home pay through a simple calculator.
+ </p>
+</div>
+
+<footer>
+ For illustration only. Estimates use standard employee
+ assumptions for 2026–27. Actual PAYE may differ.
+ <br><br>
+ © 2026 PoundPilot
+</footer>
+</div>
+
+<script>
+function money(n){
+ return new Intl.NumberFormat("en-GB",{
+  style:"currency",currency:"GBP"
+ }).format(n);
+}
+
+function bandTax(amount,bands){
+ let tax=0,previous=0;
+ for(const [limit,rate] of bands){
+  const part=Math.max(0,Math.min(amount,limit)-previous);
+  tax+=part*rate;
+  previous=limit;
+  if(amount<=limit) break;
+ }
+ return tax;
+}
+
+function calculate(){
+ const salary=Math.max(0,Number(document.getElementById("salary").value)||0);
+ const hours=Number(document.getElementById("hours").value);
+ const region=document.getElementById("region").value;
+
+ if(salary>10000000||hours<=0||hours>168){
+  alert("Please enter a valid salary and weekly hours.");
+  return;
+ }
+
+ let allowance=12570;
+ if(salary>100000){
+  allowance=Math.max(0,12570-(salary-100000)/2);
+ }
+
+ const taxable=Math.max(0,salary-allowance);
+ let tax=0;
+
+ if(region==="scotland"){
+  tax=bandTax(taxable,[
+   [3967,0.19],
+   [16956,0.20],
+   [31092,0.21],
+   [62430,0.42],
+   [125140,0.45],
+   [Infinity,0.48]
+  ]);
+ }else{
+  tax=bandTax(taxable,[
+   [37700,0.20],
+   [125140,0.40],
+   [Infinity,0.45]
+  ]);
+ }
+
+ // Standard employee National Insurance category A estimate
+ const ni=Math.max(0,Math.min(salary,50270)-12570)*0.08
+   +Math.max(0,salary-50270)*0.02;
+
+ const net=salary-tax-ni;
+
+ document.getElementById("net").textContent=money(net);
+ document.getElementById("monthly").textContent=money(net/12);
+ document.getElementById("weekly").textContent=money(net/52);
+ document.getElementById("hourly").textContent=money(net/(hours*52));
+ document.getElementById("tax").textContent=money(tax);
+ document.getElementById("ni").textContent=money(ni);
+ document.getElementById("gross").textContent=money(salary/12);
+}
+
+calculate();
+</script>
+</body>
+   </html>
+  
